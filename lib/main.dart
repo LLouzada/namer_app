@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
         ),
-        home: MyHomePage(),
+        home: MyNewHomePage(),
       ),
     );
   }
@@ -74,6 +74,13 @@ class MyHomePage extends StatelessWidget {
     var appState = context.watch<MyAppState>();
     var pair = appState.current;
 
+    IconData icon;
+    if (appState.favorites.contains(pair)) {
+      icon = Icons.favorite;
+    } else {
+      icon = Icons.favorite_border;
+    }
+
     // Every build method must return a widget or (more typically) a nested tree of widgets.
     // In this case, the top-level widget is [Scaffold]. You aren't going to work with Scaffold in this codelab,
     // but it's a helpful widget and is found in the vast majority of real-world Flutter apps.
@@ -97,11 +104,7 @@ class MyHomePage extends StatelessWidget {
                     // Calls the toggleFavorite method on the appState object.
                     appState.toggleFavorite();
                   },
-                  icon: Icon(
-                    appState.favorites.contains(pair)
-                        ? Icons.favorite
-                        : Icons.favorite_border,
-                  ),
+                  icon: Icon(icon),
                   label: Text('Like'),
                 ),
                 SizedBox(width: 10),
@@ -156,6 +159,141 @@ class BigCard extends StatelessWidget {
           // for accessibility.
           semanticsLabel: "${pair.first} ${pair.second}",
         ),
+      ),
+    );
+  }
+}
+
+/// First, notice that the entire contents of [MyNewHomePage] is extracted into a new widget, [GeneratorPage].
+/// The only part of the old MyHomePage widget that didn't get extracted is Scaffold.
+///
+/// The new [MyHomePage] contains a [Row] with two children. The first widget is [SafeArea], and the second is an [Expanded] widget.
+///
+/// [MyNewHomePage] is a [StatefulWidget], meaning that it has a state of its own.
+class MyNewHomePage extends StatefulWidget {
+  @override
+  State<MyNewHomePage> createState() => _MyNewHomePageState();
+}
+
+/// The [State] class for [MyNewHomePage].
+///
+/// This class extends State, and can therefore manage its own values. (It can change itself.)
+///  Also notice that the build method from the old, stateless widget has moved to the [_MyHomePageState] (instead of staying in the widget).
+/// It was moved verbatim—nothing inside the build method changed. It now merely lives somewhere else
+///
+/// The underscore (_) at the start of _MyHomePageState makes that class private and is enforced by the compiler.
+class _MyNewHomePageState extends State<MyNewHomePage> {
+  var selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget page;
+    switch (selectedIndex) {
+      case 0:
+        page = GeneratorPage();
+      case 1:
+        page = Placeholder();
+      default:
+        throw UnimplementedError('no widget for $selectedIndex');
+    }
+
+    // LayoutBuilder's builder callback is called every time the constraints change. This happens when, for example:
+    // - The user resizes the app's window
+    // - The user rotates their phone from portrait mode to landscape mode, or back
+    // - Some widget next to MyHomePage grows in size, making MyHomePage's constraints smaller, etc
+    // Now your code can decide whether to show the label by querying the current constraints
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Scaffold(
+          body: Row(
+            children: [
+              // The [SafeArea] ensures that its child is not obscured by a hardware notch or a status bar.
+              // In this app, the widget wraps around [NavigationRail] to prevent the navigation buttons from being obscured by a mobile status bar, for example.
+              SafeArea(
+                // The navigation rail has two destinations (Home and Favorites), with their respective icons and labels. It also defines the current selectedIndex.
+                // A selected index of zero selects the first destination, a selected index of one selects the second destination, and so on. For now, it's hard coded to zero.
+                child: NavigationRail(
+                  extended: constraints.maxWidth >= 600,
+                  destinations: [
+                    NavigationRailDestination(
+                      icon: Icon(Icons.home),
+                      label: Text('Home'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.favorite),
+                      label: Text('Favorites'),
+                    ),
+                  ],
+                  selectedIndex: selectedIndex,
+                  onDestinationSelected: (value) {
+                    setState(() {
+                      selectedIndex = value;
+                      // Introduce a new variable, selectedIndex, and initialize it to 0.
+                      // Use this new variable in the NavigationRail definition instead of the hard-coded 0 that was there until now.
+                      // When the onDestinationSelected callback is called, instead of merely printing the new value to console,
+                      //you assign it to selectedIndex inside a setState() call.
+                      //This call is similar to the notifyListeners() method used previously—it makes sure that the UI updates.
+                    });
+                  },
+                ),
+              ),
+              //  Expanded widgets are extremely useful in rows and columns—they let you express layouts
+              // where some children take only as much space as they need ([SafeArea], in this case) and
+              // other widgets should take as much of the remaining room as possible ([Expanded], in this case).
+              // One way to think about [Expanded] widgets is that they are "greedy".
+              Expanded(
+                child: Container(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: page,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class GeneratorPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+    var pair = appState.current;
+
+    IconData icon;
+    if (appState.favorites.contains(pair)) {
+      icon = Icons.favorite;
+    } else {
+      icon = Icons.favorite_border;
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          BigCard(pair: pair),
+          SizedBox(height: 10),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  appState.toggleFavorite();
+                },
+                icon: Icon(icon),
+                label: Text('Like'),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  appState.getNext();
+                },
+                child: Text('Next'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
