@@ -40,6 +40,13 @@ class MyApp extends StatelessWidget {
 /// (see code above in [MyApp]). This allows any widget in the app to get hold of the state.
 class MyAppState extends ChangeNotifier {
   var current = WordPair.random();
+
+  /// The getNext() method reassigns current with a new random WordPair.
+  /// It also calls notifyListeners() (a method of [ChangeNotifier]) that ensures that anyone watching [MyAppState] is notified.
+  void getNext() {
+    current = WordPair.random();
+    notifyListeners();
+  }
 }
 
 /// The [MyHomePage] widget is the starting point of the app.
@@ -66,7 +73,8 @@ class MyHomePage extends StatelessWidget {
           Text(appState.current.asLowerCase),
           ElevatedButton(
             onPressed: () {
-              print('button pressed!');
+              // Calls the getNext method on the appState object.
+              appState.getNext();
             },
             child: Text('Next'),
           ),
